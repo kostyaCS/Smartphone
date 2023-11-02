@@ -199,24 +199,58 @@ int main(void)
     lcd1.def_scr = lcd5110_def_scr;
     LCD5110_init(&lcd1.hw_conf, LCD5110_NORMAL_MODE, 0x40, 2, 3);
 
-    char buf[10] = {0}; // Initialized to all zeros
+    char buf[10] = {0};
     int pos = 0;
 
     char key_pressed = 0;
-    keypad_init();
-    LCD5110_clear_scr(&lcd1);
-    LCD5110_refresh(&lcd1);\
+
     rect_t rect={0,0, 83, 10};
-	LCD5110_rect(&rect, 1, &lcd1);
-	LCD5110_rect_fill(&rect, 1, &lcd1);
-	LCD5110_set_cursor(10, 25, &lcd1);
 
-	LCD5110_print("D-delete", 0, &lcd1);
+    const unsigned char call_image[] = {
+    	0xbf, 0x0f, 0x07, 0x03, 0x03, 0x01, 0x00, 0x01, 0x03, 0x1f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xbd,
+    	0x18, 0x18, 0x39, 0x39, 0x31, 0x73, 0xe3, 0xc7, 0x87, 0x0f, 0x1f, 0x7f, 0xff, 0xff, 0xff, 0xfc,
+    	0xe0, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x38, 0x7e, 0xff, 0xff, 0xff, 0xff, 0xf3, 0xf3, 0xe3,
+    	0x87, 0x8e, 0xfe, 0xf8, 0xc0, 0x81, 0xcf, 0xff, 0xfc, 0xc0, 0x81, 0xcf, 0xff, 0xff, 0xff, 0xff,
+    	0xff, 0xfc, 0xf8, 0xf0, 0xe0, 0xc0, 0x80, 0x01, 0x03, 0x07, 0x07, 0x0f, 0x1f, 0x1f, 0x1f, 0x0f,
+    	0x0f, 0x07, 0x0f, 0x0f, 0x0f, 0x1f, 0x1f, 0x1f, 0x3f, 0x7f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f,
+    	0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3e, 0x3e, 0x3c, 0x38, 0x38, 0x30, 0x30, 0x30, 0x20, 0x20,
+    	0x20, 0x00, 0x20, 0x20, 0x30, 0x38, 0x3e, 0x3f
+    };
 
-	LCD5110_set_cursor(10, 35, &lcd1);
+    bool is_call;
 
-	LCD5110_print("C-clear last", 0, &lcd1);
-	LCD5110_set_cursor(0, 0, &lcd1);
+    void init_screen() {
+    	keypad_init();
+		LCD5110_clear_scr(&lcd1);
+		LCD5110_refresh(&lcd1);
+		LCD5110_rect(&rect, 1, &lcd1);
+		LCD5110_rect_fill(&rect, 1, &lcd1);
+		LCD5110_set_cursor(10, 15, &lcd1);
+
+		LCD5110_print("A-call", 0, &lcd1);
+
+		LCD5110_set_cursor(10, 25, &lcd1);
+
+		LCD5110_print("D-delete", 0, &lcd1);
+
+		LCD5110_set_cursor(10, 35, &lcd1);
+
+		LCD5110_print("C-clear last", 0, &lcd1);
+		LCD5110_set_cursor(0, 0, &lcd1);
+		is_call = false;
+    }
+
+    void call_screen() {
+    	LCD5110_clear_scr(&lcd1);
+    	LCD5110_refresh(&lcd1);
+    	LCD5110_drawBitmap(25, 1, call_image, 30, 30, 0, &lcd1.hw_conf);
+    	LCD5110_set_cursor(10, 40, &lcd1);
+    	LCD5110_print("A-end call", 0, &lcd1);
+    	is_call = true;
+    }
+    init_screen();
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -227,8 +261,21 @@ int main(void)
 
 	    if(key_pressed != 0)
 	    {
-	        // Clear the buffer and reset position
-	        if (key_pressed == 'D')
+
+	    	if (key_pressed == 'A') {
+	    		if (is_call) {
+	    			buf[0] = '\0';
+					pos = 0;
+					LCD5110_refresh(&lcd1);
+					LCD5110_rect_fill(&rect, 1, &lcd1);
+					LCD5110_set_cursor(0, 0, &lcd1);
+	    			init_screen();
+	    		}
+	    		else {
+	    			call_screen();
+	    		}
+	    	}
+	    	else if (key_pressed == 'D')
 	        {
 	            memset(buf, ' ', sizeof(buf) - 1);
 	            buf[0] = '\0';
@@ -239,27 +286,24 @@ int main(void)
 	        }
 	        else if (key_pressed == 'C' && pos > 0)
 	                {
-	        		pos--;
-	        	    buf[pos] = '\0';
+	        			pos--;
+						buf[pos] = '\0';
 
-	        	    LCD5110_set_cursor(0, 0, &lcd1);
-	        	    char clearStr[10] = "          "; // A string filled with spaces
-	        	    LCD5110_print(clearStr, 0, &lcd1); // Clear the area
-
-	        	    LCD5110_set_cursor(0, 0, &lcd1); // Reset cursor position again
-	        	    LCD5110_print(buf, 0, &lcd1); // Print the updated buffer
+						LCD5110_refresh(&lcd1);
+						LCD5110_rect_fill(&rect, 1, &lcd1);
+						LCD5110_set_cursor(0, 0, &lcd1);
+						LCD5110_print(buf, 0, &lcd1);
 	                }
-	        else if (key_pressed >= '0' && key_pressed <= '9' && pos < sizeof(buf) - 1)
+	        else if (key_pressed >= '0' && key_pressed <= '9' && pos < sizeof(buf))
 	        {
 	            buf[pos] = key_pressed;
 	            pos++;
-	            buf[pos] = '\0'; // Ensure null termination
+	            buf[pos] = '\0';
 
 	            LCD5110_set_cursor(0, 0, &lcd1);
 	            LCD5110_print(buf, 0, &lcd1);
 	        }
 	    }
-
 	    LCD5110_refresh(&lcd1);
 	    HAL_Delay(1000);
 	    LCD5110_refresh(&lcd1);
