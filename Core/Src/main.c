@@ -203,20 +203,20 @@ int main(void)
     lcd1.def_scr = lcd5110_def_scr;
     LCD5110_init(&lcd1.hw_conf, LCD5110_NORMAL_MODE, 0x40, 2, 3);
 
-			    char ATcommand[100];
-			    char res[10];
-			      sprintf(ATcommand,"AT\r\n");
-			      HAL_UART_Transmit(&huart1,(uint8_t *)ATcommand,strlen(ATcommand),100);
-			      HAL_UART_Receive (&huart1, (uint8_t *)res, 10, 10);
+	char ATcommand[100];
+	char res[10];
+		sprintf(ATcommand,"AT\r\n");
+		HAL_UART_Transmit(&huart1,(uint8_t *)ATcommand,strlen(ATcommand),100);
+		HAL_UART_Receive (&huart1, (uint8_t *)res, 10, 10);
 
-			      if(strstr((char *)res,"OK"))
-			      {
-			          HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);   // green
-			      }
-			      else{
-			        HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);    // red
+		if(strstr((char *)res,"OK"))
+		{
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);   // green
+		}
+		else{
+		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);    // red
 
-			      }
+		}
 
 
     char buf[10] = {0};
@@ -411,82 +411,80 @@ int main(void)
 	    {
 	    	if (type_message_screen) {
 	    		if (!want_to_send_digits) {
-	    			    			if (key_pressed >= '0' && key_pressed <= '9') {
-	    			    				int num = key_pressed - '0';
-	    			    				letters[num - 1]++;
-	    			    			}
-	    			    			if (key_pressed == 'C') {
-
-	    			    				int maxindex = 0;
-	    			    				for (int i = 0; i < 9; i++) {
-	    			    				        if (letters[i] > letters[maxindex]) {
-	    			    				        	maxindex = i;
-	    			    				        }
-	    			    				    }
-	    			    				char *message_t = letters_for_keys[maxindex];
-	    			    				message[message_pos] = message_t[letters[maxindex] - 1];
-										message_pos++;
-										message[message_pos] = '\0';
-	    			    				LCD5110_set_cursor(0, 0, &lcd1);
-										LCD5110_print(message, 0, &lcd1);
-										LCD5110_refresh(&lcd1);
-										memset(letters, 0, sizeof(letters));
-	    			    			}
-	    			    			if (key_pressed == 'A') {
-										strcat(message, "\r\n\x1A");
-										HAL_UART_Transmit(&huart1,(uint8_t *)message,strlen(message),100);
-										HAL_Delay(5000);
-										HAL_UART_Receive (&huart1, (uint8_t *)res, 10, 10);
-										LCD5110_refresh(&lcd1);
-										HAL_Delay(5000);
-										message[0] = '\0';
-										message_pos = 0;
-										LCD5110_refresh(&lcd1);
-										type_message_screen = false;
-										screen_begin = true;
-										want_to_send_digits = true;
-										buf[0] = '\0';
-										message[0] = '\0';
-										message_pos = 0;
-										pos = 0;
-										main_screen(cursor_on_phone - 1);
-									}
-
-	    			    		}
+					if (key_pressed >= '0' && key_pressed <= '9') {
+						int num = key_pressed - '0';
+						letters[num - 1]++;
+					}
+					if (key_pressed == 'C') {
+						int maxindex = 0;
+						for (int i = 0; i < 9; i++) {
+								if (letters[i] > letters[maxindex]) {
+									maxindex = i;
+								}
+							}
+							char *message_t = letters_for_keys[maxindex];
+							message[message_pos] = message_t[letters[maxindex] - 1];
+							message_pos++;
+							message[message_pos] = '\0';
+							LCD5110_set_cursor(0, 0, &lcd1);
+							LCD5110_print(message, 0, &lcd1);
+							LCD5110_refresh(&lcd1);
+							memset(letters, 0, sizeof(letters));
+						}
+					if (key_pressed == 'A') {
+						strcat(message, "\r\n\x1A");
+						HAL_UART_Transmit(&huart1,(uint8_t *)message,strlen(message),100);
+						HAL_Delay(5000);
+						HAL_UART_Receive (&huart1, (uint8_t *)res, 10, 10);
+						LCD5110_refresh(&lcd1);
+						HAL_Delay(5000);
+						message[0] = '\0';
+						message_pos = 0;
+						LCD5110_refresh(&lcd1);
+						type_message_screen = false;
+						screen_begin = true;
+						want_to_send_digits = true;
+						buf[0] = '\0';
+						message[0] = '\0';
+						message_pos = 0;
+						pos = 0;
+						main_screen(cursor_on_phone - 1);
+					}
+	    		}
 	    		else {
 	    			if (key_pressed == 'C') { // changing mode to letters
-	    				    			want_to_send_digits = false;
-	    				    		}
+						want_to_send_digits = false;
+					}
 
-	    				    		else if (key_pressed >= '0' && key_pressed <= '9' && message_pos < sizeof(message))
-	    								{
-	    				    				message[message_pos] = key_pressed;
-	    				    				message_pos++;
-	    									message[message_pos] = '\0';
+					else if (key_pressed >= '0' && key_pressed <= '9' && message_pos < sizeof(message))
+						{
+							message[message_pos] = key_pressed;
+							message_pos++;
+							message[message_pos] = '\0';
 
-	    									LCD5110_set_cursor(0, 0, &lcd1);
-	    									LCD5110_print(message, 0, &lcd1);
-	    								}
-	    				    		if (key_pressed == 'A') {
+							LCD5110_set_cursor(0, 0, &lcd1);
+							LCD5110_print(message, 0, &lcd1);
+						}
+						if (key_pressed == 'A') {
 
 
-	    				    			strcat(message, "\r\n\x1A");
+							strcat(message, "\r\n\x1A");
 
-	    								HAL_UART_Transmit(&huart1,(uint8_t *)message,strlen(message),100);
-	    								HAL_Delay(5000);
-	    							    HAL_UART_Receive (&huart1, (uint8_t *)res, 10, 10);
-	    							    LCD5110_refresh(&lcd1);
-	    							    HAL_Delay(5000);
-	    							    message[0] = '\0';
-	    							    message_pos = 0;
-	    								LCD5110_refresh(&lcd1);
-	    								type_message_screen = false;
-	    				    			screen_begin = true;
-	    				    			buf[0] = '\0';
-	    				    			pos = 0;
-	    				    			main_screen(cursor_on_phone - 1);
-	    				    		}
-	    				    	}
+							HAL_UART_Transmit(&huart1,(uint8_t *)message,strlen(message),100);
+							HAL_Delay(5000);
+							HAL_UART_Receive (&huart1, (uint8_t *)res, 10, 10);
+							LCD5110_refresh(&lcd1);
+							HAL_Delay(5000);
+							message[0] = '\0';
+							message_pos = 0;
+							LCD5110_refresh(&lcd1);
+							type_message_screen = false;
+							screen_begin = true;
+							buf[0] = '\0';
+							pos = 0;
+							main_screen(cursor_on_phone - 1);
+						}
+	    			}
 	    		}
 	    	else if (screen_message) {
 	    		if (key_pressed == 'B') {
