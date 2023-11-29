@@ -197,7 +197,7 @@ int main(void)
     lcd1.hw_conf.spi_cs_pin =  GPIO_PIN_2;
     lcd1.hw_conf.spi_cs_port = GPIOA;
     lcd1.hw_conf.rst_pin =  GPIO_PIN_0;
-    lcd1.hw_conf.rst_port = GPIOB;
+    lcd1.hw_conf.rst_port = GPIOC;
     lcd1.hw_conf.dc_pin =  GPIO_PIN_3;
     lcd1.hw_conf.dc_port = GPIOA;
     lcd1.def_scr = lcd5110_def_scr;
@@ -271,7 +271,7 @@ int main(void)
 
     const char CALL_NUMBER[] = "ATD+38";
 
-    const char END_CALL[] = "AT+CHUP";
+    const char END_CALL[] = "AT+CHUP\r\n";
 
     char* letters_for_keys[] = {
             "ABC",
@@ -313,7 +313,13 @@ int main(void)
     void call_screen() {
     	LCD5110_clear_scr(&lcd1);
     	LCD5110_refresh(&lcd1);
-    	LCD5110_drawBitmap(25, 1, call_image, 30, 30, 0, &lcd1.hw_conf);
+    	//LCD5110_drawBitmap(25, 1, call_image, 30, 30, 0, &lcd1.hw_conf);
+    	char phone_info[26];
+    	LCD5110_set_cursor(18, 1, &lcd1);
+    	strcpy(phone_info, "Calling\n");
+    	LCD5110_print(phone_info, BLACK, &lcd1);
+    	LCD5110_set_cursor(10, 20, &lcd1);
+    	LCD5110_print(buf, WHITE, &lcd1);
     	LCD5110_set_cursor(10, 40, &lcd1);
     	LCD5110_print("A-end call", 0, &lcd1);
     	is_call = true;
@@ -584,7 +590,8 @@ int main(void)
 						LCD5110_refresh(&lcd1);
 						LCD5110_rect_fill(&rect, 1, &lcd1);
 						LCD5110_set_cursor(0, 0, &lcd1);
-						init_screen();
+						screen_begin = true;
+						main_screen(0);
 					}
 					else {
 						char call_number[16];
@@ -605,15 +612,15 @@ int main(void)
 					LCD5110_set_cursor(0, 0, &lcd1);
 				}
 				else if (key_pressed == 'C' && pos > 0 && screen_main)
-						{
-							pos--;
-							buf[pos] = '\0';
+					{
+						pos--;
+						buf[pos] = '\0';
 
-							LCD5110_refresh(&lcd1);
-							LCD5110_rect_fill(&rect, 1, &lcd1);
-							LCD5110_set_cursor(0, 0, &lcd1);
-							LCD5110_print(buf, 0, &lcd1);
-						}
+						LCD5110_refresh(&lcd1);
+						LCD5110_rect_fill(&rect, 1, &lcd1);
+						LCD5110_set_cursor(0, 0, &lcd1);
+						LCD5110_print(buf, 0, &lcd1);
+					}
 				else if (key_pressed >= '0' && key_pressed <= '9' && pos < sizeof(buf) && screen_main)
 				{
 					buf[pos] = key_pressed;
