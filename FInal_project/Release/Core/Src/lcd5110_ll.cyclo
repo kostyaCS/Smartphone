@@ -1,0 +1,8 @@
+../Core/Src/lcd5110_ll.c:42:20:LCD5110_DC_off	1
+../Core/Src/lcd5110_ll.c:38:20:LCD5110_DC_on	1
+../Core/Src/lcd5110_ll.c:16:33:send_byte_to_LCD5110.isra	1
+../Core/Src/lcd5110_ll.c:103:5:LCD5110_set_mode	2
+../Core/Src/lcd5110_ll.c:142:5:LCD5110_set_temp_coef	2
+../Core/Src/lcd5110_ll.c:166:5:LCD5110_set_bias	2
+../Core/Src/lcd5110_ll.c:224:5:LCD5110_init	6
+../Core/Src/lcd5110_ll.c:260:6:LCD5110_refresh_ll	1
