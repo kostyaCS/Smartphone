@@ -77,7 +77,247 @@ void PeriphCommonClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+
+
 LCD5110_display lcd1;
+
+#define MAP_WIDTH 84
+#define MAP_HEIGHT 48
+int SNAKE_SIZE = 8;
+#define MAX_SNAKE_SIZE 25
+
+#define BLACK 1
+#define WHITE 0
+
+
+#define LEFT 0
+#define UP 1
+#define RIGHT 2
+#define DOWN 3
+
+int map[MAP_HEIGHT][MAP_WIDTH];
+bool isDead = false;
+int DIRECTION = UP;
+
+typedef struct {
+    int x;
+    int y;
+} SnakeSegment;
+
+SnakeSegment snake[MAX_SNAKE_SIZE];
+
+SnakeSegment apple;
+
+void initializeSnake() {
+    for (int i = 0; i < SNAKE_SIZE; ++i) {
+        snake[i].x = i + 10;
+        snake[i].y = 24;
+    }
+}
+
+void initializeApple() {
+    generateRandomApplePosition();
+}
+
+void generateRandomApplePosition() {
+    srand(HAL_GetTick());
+
+    while (1) {
+        apple.x = rand() % (MAP_WIDTH - 8) + 2;
+        apple.y = rand() % (MAP_HEIGHT - 8) + 2;
+
+        if (isPositionEmpty(apple.x, apple.y)) {
+            break;
+        }
+    }
+}
+
+int isPositionEmpty(int x, int y) {
+    for (int i = 0; i < SNAKE_SIZE; ++i) {
+        if (snake[i].x == x && snake[i].y == y) {
+            return 0;
+        }
+    }
+
+    if (map[y][x] == BLACK) {
+        return 0;
+    }
+
+    return 1;
+}
+
+void drawApple(LCD5110_display* lcd_conf) {
+    LCD5110_putpix(apple.x, apple.y, BLACK, &lcd_conf->hw_conf);
+    LCD5110_putpix(apple.x, apple.y + 1, BLACK, &lcd_conf->hw_conf);
+    LCD5110_putpix(apple.x + 1, apple.y, BLACK, &lcd_conf->hw_conf);
+    LCD5110_putpix(apple.x + 1, apple.y + 1, BLACK, &lcd_conf->hw_conf);
+}
+
+void moveSnake(LCD5110_display* lcd_conf) {
+
+	LCD5110_putpix(snake[SNAKE_SIZE-1].x, snake[SNAKE_SIZE-1].y, WHITE, &lcd_conf->hw_conf);
+	LCD5110_putpix(snake[SNAKE_SIZE-1].x, snake[SNAKE_SIZE-1].y + 1, WHITE, &lcd_conf->hw_conf);
+	LCD5110_putpix(snake[SNAKE_SIZE-1].x + 1, snake[SNAKE_SIZE-1].y, WHITE, &lcd_conf->hw_conf);
+	LCD5110_putpix(snake[SNAKE_SIZE-1].x + 1, snake[SNAKE_SIZE-1].y + 1, WHITE, &lcd_conf->hw_conf);
+
+    for (int i = SNAKE_SIZE - 1; i > 0; --i) {
+        snake[i] = snake[i - 1];
+    }
+
+
+    if (DIRECTION == RIGHT){
+    	snake[0].x += 2;
+    }
+    else if (DIRECTION == UP){
+    	snake[0].y -= 2;
+    }
+    else if (DIRECTION == LEFT){
+    	snake[0].x -= 2;
+    }
+    else if (DIRECTION == DOWN){
+    	snake[0].y += 2;
+    }
+
+    if (DIRECTION == RIGHT || DIRECTION == DOWN){
+    	if (snake[0].x <= 1 || snake[0].x >= MAP_WIDTH - 2 || snake[0].y <= 1 || snake[0].y >= MAP_HEIGHT - 2) {
+			isDead = true;
+		}
+    }else{
+    	if (snake[0].x + 1 <= 1 || snake[0].x + 1 >= MAP_WIDTH - 2 || snake[0].y + 1 <= 1 || snake[0].y + 1 >= MAP_HEIGHT - 2) {
+			isDead = true;
+		}
+    }
+
+
+    for (int i = 1; i < SNAKE_SIZE; ++i) {
+    	if (DIRECTION == RIGHT){
+    		if ( (snake[0].x == snake[i].x + 1 && snake[0].y == snake[i].y) ||
+    			 (snake[0].x == snake[i].x + 1 && snake[0].y == snake[i].y + 1)) {
+				isDead = true;
+				break;
+			}
+    	}
+    	else if (DIRECTION == LEFT){
+    		if ( (snake[0].x == snake[i].x && snake[0].y == snake[i].y) ||
+				 (snake[0].x == snake[i].x && snake[0].y == snake[i].y + 1)) {
+				isDead = true;
+				break;
+			}
+    	}
+    	else if (DIRECTION == UP){
+    		if ( (snake[0].x == snake[i].x && snake[0].y == snake[i].y) ||
+				 (snake[0].x == snake[i].x + 1 && snake[0].y == snake[i].y)) {
+				isDead = true;
+				break;
+			}
+    	}
+    	else{
+    		if ( (snake[0].x == snake[i].x && snake[0].y == snake[i].y + 1) ||
+				 (snake[0].x == snake[i].x + 1 && snake[0].y == snake[i].y + 1)) {
+				isDead = true;
+				break;
+			}
+    	}
+    }
+
+	if (isDead) {
+		for (int i = 1; i < SNAKE_SIZE; ++i) {
+			LCD5110_putpix(snake[i].x, snake[i].y, WHITE, &lcd_conf->hw_conf);
+			LCD5110_putpix(snake[i].x, snake[i].y + 1, WHITE, &lcd_conf->hw_conf);
+			LCD5110_putpix(snake[i].x + 1, snake[i].y, WHITE, &lcd_conf->hw_conf);
+			LCD5110_putpix(snake[i].x + 1, snake[i].y + 1, WHITE, &lcd_conf->hw_conf);
+		}
+
+		LCD5110_putpix(apple.x, apple.y, WHITE, &lcd_conf->hw_conf);
+		LCD5110_putpix(apple.x, apple.y + 1, WHITE, &lcd_conf->hw_conf);
+		LCD5110_putpix(apple.x + 1, apple.y, WHITE, &lcd_conf->hw_conf);
+		LCD5110_putpix(apple.x + 1, apple.y + 1, WHITE, &lcd_conf->hw_conf);
+
+		initializeSnake();
+		initializeApple();
+
+		drawApple(&lcd1);
+		DIRECTION = UP;
+		isDead = false;
+	}
+
+    if ( (snake[0].x == apple.x && snake[0].y == apple.y ) ||
+    	 (snake[0].x == apple.x + 1 && snake[0].y == apple.y) ||
+		 (snake[0].x == apple.x && snake[0].y == apple.y + 1) ||
+		 (snake[0].x == apple.x + 1 && snake[0].y == apple.y + 1) ||
+		 (snake[0].x + 1 == apple.x && snake[0].y + 1 == apple.y) ||
+		 (snake[0].x + 1 == apple.x + 1 && snake[0].y + 1 == apple.y) ||
+		 (snake[0].x + 1 == apple.x && snake[0].y + 1 == apple.y + 1) ||
+		 (snake[0].x + 1 == apple.x + 1 && snake[0].y + 1 == apple.y + 1)) {
+		if (SNAKE_SIZE < MAX_SNAKE_SIZE) {
+			snake[SNAKE_SIZE].x = snake[SNAKE_SIZE - 1].x;
+			snake[SNAKE_SIZE].y = snake[SNAKE_SIZE - 1].y;
+			SNAKE_SIZE++;
+
+		}
+
+		LCD5110_putpix(apple.x, apple.y, WHITE, &lcd_conf->hw_conf);
+		LCD5110_putpix(apple.x, apple.y + 1, WHITE, &lcd_conf->hw_conf);
+		LCD5110_putpix(apple.x + 1, apple.y, WHITE, &lcd_conf->hw_conf);
+		LCD5110_putpix(apple.x + 1, apple.y + 1, WHITE, &lcd_conf->hw_conf);
+
+		generateRandomApplePosition();
+		drawApple(lcd_conf);
+	}
+
+}
+
+void drawSnake(LCD5110_display* lcd_conf) {
+    for (int i = 0; i < SNAKE_SIZE; ++i) {
+        LCD5110_putpix(snake[i].x, snake[i].y, BLACK, &lcd_conf->hw_conf);
+        LCD5110_putpix(snake[i].x, snake[i].y + 1, BLACK, &lcd_conf->hw_conf);
+        LCD5110_putpix(snake[i].x + 1, snake[i].y, BLACK, &lcd_conf->hw_conf);
+        LCD5110_putpix(snake[i].x + 1, snake[i].y + 1, BLACK, &lcd_conf->hw_conf);
+    }
+}
+
+void clearSnake(LCD5110_display* lcd_conf){
+	for (int i = 0; i < SNAKE_SIZE; ++i) {
+		LCD5110_putpix(snake[i].x, snake[i].y, WHITE, &lcd_conf->hw_conf);
+	}
+}
+
+void initializeMap() {
+    for (int i = 0; i < MAP_HEIGHT; ++i) {
+        for (int j = 0; j < MAP_WIDTH; ++j) {
+            map[i][j] = WHITE;
+        }
+    }
+
+    for (int i = 0; i < MAP_WIDTH; ++i) {
+        map[0][i] = BLACK;
+        map[1][i] = BLACK;
+        map[MAP_HEIGHT - 1][i] = BLACK;
+        map[MAP_HEIGHT - 2][i] = BLACK;
+    }
+
+    for (int i = 0; i < MAP_HEIGHT; ++i) {
+        map[i][0] = BLACK;
+        map[i][1] = BLACK;
+        map[i][MAP_WIDTH - 1] = BLACK;
+        map[i][MAP_WIDTH - 2] = BLACK;
+    }
+}
+
+void drawMap(LCD5110_display* lcd_conf) {
+    LCD5110_clear_scr(lcd_conf);
+
+    for (int i = 0; i < MAP_HEIGHT; ++i) {
+        for (int j = 0; j < MAP_WIDTH; ++j) {
+            if (map[i][j] == BLACK) {
+                LCD5110_putpix(j, i, BLACK, &lcd_conf->hw_conf);
+            }
+        }
+    }
+
+    LCD5110_refresh(lcd_conf);
+}
+
 void keypad_init(void)
 {
   // Configure GPIO pins for keypad matrix
@@ -174,6 +414,8 @@ bool want_to_send_digits = true;
 bool end_call_flag = false;
 bool cursor_on_read = false;
 bool message_read = false;
+bool snake_screen = false;
+bool snake_start = false;
 int num_of_msg = 0;
 
 const char *MESSAGE_MODE = "AT+CMGF=1\r\n";
@@ -296,12 +538,8 @@ void handle_interrupts(module_t gsm_module, char *rx_buff, int count){
 			screen_begin = false;
 			want_to_send_digits = false;
 			get_call = true;
-			memcpy(buf, &rx_buff[10], 10);
+			memcpy(buf, &rx_buff[11], 10);
 			buf[10] = '\0';
-			return;
-		}
-		if (rx_buff[0] == '+' && rx_buff[0] == 'C' && rx_buff[0] == 'M' && rx_buff[0] == 'G'){
-			gsm_module.last_response = rx_buff;
 			return;
 		}
 	}
@@ -549,6 +787,18 @@ int main(void)
 		is_message = false;
     }
 
+    void snake_screen_build() {
+    	LCD5110_clear_scr(&lcd1);
+		LCD5110_refresh(&lcd1);
+		initializeMap();
+		initializeSnake();
+		initializeApple();
+
+
+		drawMap(&lcd1);
+		drawApple(&lcd1);
+    }
+
     void type_message_scren() {
         	LCD5110_clear_scr(&lcd1);
         	LCD5110_refresh(&lcd1);
@@ -574,7 +824,37 @@ int main(void)
 	while (1)
 	{
 	    key_pressed = keypad_scan();
-    	if (get_call){
+	    if (snake_start){
+	    	drawSnake(&lcd1);
+	    	moveSnake(&lcd1);
+
+		   if(key_pressed != 0)
+		   {
+			if (key_pressed == '2' & DIRECTION != UP & DIRECTION != DOWN){
+			 DIRECTION = UP;
+			}
+			else if (key_pressed == '6' & DIRECTION != RIGHT & DIRECTION != LEFT){
+			 DIRECTION = RIGHT;
+			}
+			else if (key_pressed == '8' & DIRECTION != DOWN & DIRECTION != UP){
+			 DIRECTION = DOWN;
+			}
+			else if (key_pressed == '4' & DIRECTION != LEFT & DIRECTION != RIGHT){
+			 DIRECTION = LEFT;
+			}
+    		else if (key_pressed == 'B'){
+    			snake_screen = false;
+    			snake_start = false;
+    			screen_main = true;
+    			main_screen(cursor_on_phone - 1);
+    		}
+
+		   }
+
+		   LCD5110_refresh(&lcd1);
+		   HAL_Delay(10);
+	    }
+	    else if (get_call){
     		get_call_screen(buf);
     		if (key_pressed == 'A'){
     			answer_call(gsm_module);
@@ -619,10 +899,10 @@ int main(void)
 					if (key_pressed == 'A') {
 						strcat(message, "\r\n\x1A");
 						HAL_UART_Transmit(&huart1,(uint8_t *)message,strlen(message),100);
-						HAL_Delay(5000);
+						HAL_Delay(500);
 						HAL_UART_Receive (&huart1, (uint8_t *)res, 10, 10);
 						LCD5110_refresh(&lcd1);
-						HAL_Delay(5000);
+						HAL_Delay(500);
 						message[0] = '\0';
 						message_pos = 0;
 						LCD5110_refresh(&lcd1);
@@ -656,10 +936,10 @@ int main(void)
 							strcat(message, "\r\n\x1A");
 
 							HAL_UART_Transmit(&huart1,(uint8_t *)message,strlen(message),100);
-							HAL_Delay(5000);
+							HAL_Delay(500);
 							HAL_UART_Receive (&huart1, (uint8_t *)res, 10, 10);
 							LCD5110_refresh(&lcd1);
-							HAL_Delay(5000);
+							HAL_Delay(500);
 							message[0] = '\0';
 							message_pos = 0;
 							LCD5110_refresh(&lcd1);
@@ -756,6 +1036,12 @@ int main(void)
 	    				cursor_on_read = true;
 	    				cursor_on_phone = false;
 	    				cursor_on_message = false;
+	    			} else if (num == 2){
+	    				snake_screen = true;
+						cursor_on_read = false;
+						cursor_on_phone = false;
+						cursor_on_message = false;
+
 	    			}
 	    			main_screen(num - 1);
 	    		}
@@ -773,6 +1059,12 @@ int main(void)
 					screen_begin = false;
 					message_read = true;
 					screen_on_read(0);
+				}
+				if (key_pressed == '*' && snake_screen){
+					snake_start = true;
+					screen_main = false;
+					screen_begin = false;
+					snake_screen_build();
 				}
 	    	}
 	    	else if (screen_main){
@@ -838,7 +1130,7 @@ int main(void)
 
 	    }
 	    LCD5110_refresh(&lcd1);
-	    HAL_Delay(1000);
+	    HAL_Delay(300);
 	    LCD5110_refresh(&lcd1);
     /* USER CODE END WHILE */
 
